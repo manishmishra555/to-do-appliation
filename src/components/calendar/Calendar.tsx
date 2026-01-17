@@ -96,7 +96,7 @@ export const Calendar: React.FC = () => {
     .map(task => {
       const colors = getPriorityColor(task.priority);
       return {
-        id: task.id,
+        id: (task as any)._id,
         title: task.title,
         start: new Date(task.dueDate!),
         end: new Date(new Date(task.dueDate!).getTime() + 60 * 60 * 1000),
@@ -115,7 +115,7 @@ export const Calendar: React.FC = () => {
       start: new Date('2023-10-02'),
       end: new Date('2023-10-02T23:59:59'),
       task: { 
-        id: '1', 
+        _id: '1', 
         title: 'Design Review', 
         description: '', 
         priority: 'medium', 
@@ -134,7 +134,7 @@ export const Calendar: React.FC = () => {
       start: new Date('2023-10-04'),
       end: new Date('2023-10-04T23:59:59'),
       task: { 
-        id: '2', 
+        _id: '2', 
         title: 'Team Lunch', 
         description: '', 
         priority: 'low', 
@@ -152,7 +152,7 @@ export const Calendar: React.FC = () => {
       start: new Date('2023-10-04'),
       end: new Date('2023-10-04T23:59:59'),
       task: { 
-        id: '3', 
+        _id: '3', 
         title: 'Project Kickoff', 
         description: '', 
         priority: 'medium', 
@@ -171,7 +171,7 @@ export const Calendar: React.FC = () => {
       start: new Date('2023-10-05'),
       end: new Date('2023-10-05T23:59:59'),
       task: { 
-        id: '4', 
+        _id: '4', 
         title: 'Client Call: Acme Corp', 
         description: '', 
         priority: 'high', 
@@ -190,7 +190,7 @@ export const Calendar: React.FC = () => {
       start: new Date('2023-10-09'),
       end: new Date('2023-10-09T23:59:59'),
       task: { 
-        id: '5', 
+        _id: '5', 
         title: 'Deadline: Website V2', 
         description: '', 
         priority: 'high', 
@@ -209,7 +209,7 @@ export const Calendar: React.FC = () => {
       start: new Date('2023-10-11'),
       end: new Date('2023-10-11T23:59:59'),
       task: { 
-        id: '6', 
+        _id: '6', 
         title: 'Weekly Sync', 
         description: '', 
         priority: 'medium', 
@@ -228,7 +228,7 @@ export const Calendar: React.FC = () => {
       start: new Date('2023-10-16'),
       end: new Date('2023-10-16T23:59:59'),
       task: { 
-        id: '7', 
+        _id: '7', 
         title: 'OOO: Dentist', 
         description: '', 
         priority: 'low', 
@@ -247,7 +247,7 @@ export const Calendar: React.FC = () => {
       start: new Date('2023-10-19'),
       end: new Date('2023-10-19T23:59:59'),
       task: { 
-        id: '8', 
+        _id: '8', 
         title: 'Design Workshop', 
         description: '', 
         priority: 'medium', 
@@ -265,7 +265,7 @@ export const Calendar: React.FC = () => {
       start: new Date('2023-10-19'),
       end: new Date('2023-10-19T23:59:59'),
       task: { 
-        id: '9', 
+        _id: '9', 
         title: 'Sprint Review', 
         description: '', 
         priority: 'medium', 
@@ -284,7 +284,7 @@ export const Calendar: React.FC = () => {
       start: new Date('2023-10-24'),
       end: new Date('2023-10-24T23:59:59'),
       task: { 
-        id: '10', 
+        _id: '10', 
         title: 'Payday', 
         description: '', 
         priority: 'low', 
@@ -303,7 +303,7 @@ export const Calendar: React.FC = () => {
       start: new Date('2023-10-27'),
       end: new Date('2023-10-27T23:59:59'),
       task: { 
-        id: '11', 
+        _id: '11', 
         title: 'Review Q3 Goals', 
         description: '', 
         priority: 'medium', 
@@ -322,7 +322,7 @@ export const Calendar: React.FC = () => {
       start: new Date('2023-10-30'),
       end: new Date('2023-10-30T23:59:59'),
       task: { 
-        id: '12', 
+        _id: '12', 
         title: 'Tax Filing', 
         description: '', 
         priority: 'high', 

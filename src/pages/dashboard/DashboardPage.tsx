@@ -1,12 +1,12 @@
 // src/pages/dashboard/DashboardPage.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTaskStore } from '../../store/useTaskStore';
 import { useAuthStore } from '../../store/useAuthStore';
-import DashboardSidebar from '../../components/dashboard/DashboardSidebar';
-import DashboardHeader from '../../components/dashboard/DashboardHeader';
+
 import StatsCards from '../../components/dashboard/StatsCards';
 import TaskList from '../../components/tasks/TaskList';
 import CreateTaskPage from '../tasks/CreateTaskPage';
+import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
 const DashboardPage: React.FC = () => {
@@ -15,11 +15,16 @@ const DashboardPage: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const navigate = useNavigate();
 
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
   // Calculate stats
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(task => task.completed).length;
   const pendingTasks = tasks.filter(task => !task.completed).length;
+  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   // Filter tasks based on selected filter
   const filteredTasks = tasks.filter(task => {
@@ -48,7 +53,7 @@ const DashboardPage: React.FC = () => {
 
         {/* Tasks Section */}
         <div className="flex flex-col gap-4">
-          <TaskList tasks={filteredTasks} onAddTask={() => setIsCreateOpen(true)} />
+            <TaskList tasks={filteredTasks} onAddTask={() => navigate('/tasks/create')} />
         </div>
 
         {/* Create Task Modal */}

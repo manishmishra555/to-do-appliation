@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useTaskStore } from '../../store/useTaskStore';
 
 interface Tag {
   id: string;
@@ -11,12 +12,13 @@ interface Tag {
 
 const CreateTaskPage: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const navigate = useNavigate();
+  const { addTask } = useTaskStore();
   
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     dueDate: '',
-    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'critical',
     assignee: '',
     category: '',
     estimatedTime: '',
@@ -57,7 +59,7 @@ const CreateTaskPage: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.title.trim()) {
       toast.error('Please enter a task title');
       return;
@@ -65,16 +67,30 @@ const CreateTaskPage: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
 
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      toast.success('Task created successfully!');
-      setIsSubmitting(false);
+    try {
+      const taskData = {
+        title: formData.title.trim(),
+        description: formData.description.trim() || undefined,
+        priority: formData.priority as 'low' | 'medium' | 'high' | 'critical',
+        category: formData.category || 'General',
+        tags: newTag.trim() ? [...tags.map(t => t.text), newTag.trim()] : tags.map(t => t.text),
+        dueDate: formData.dueDate || undefined,
+        estimatedDuration: formData.estimatedTime ? parseInt(formData.estimatedTime) * 60 : undefined, // Convert hours to minutes
+      };
+
+      // Call API to create task (toast is handled by the store)
+      await addTask(taskData as any);
+      
       if (onClose) {
         onClose();
       } else {
         navigate('/tasks');
       }
-    }, 1000);
+    } catch (error) {
+      // Error is handled by the store
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -103,7 +119,7 @@ const CreateTaskPage: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
       low: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
       medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
       high: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-      urgent: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+      critical: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
     };
     return colors[priority] || colors.medium;
   };
@@ -189,7 +205,7 @@ const CreateTaskPage: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
                     <option value="low">Low Priority</option>
                     <option value="medium">Medium Priority</option>
                     <option value="high">High Priority</option>
-                    <option value="urgent">Urgent</option>
+                    <option value="critical">Critical</option>
                   </select>
                   <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none">
                     expand_more

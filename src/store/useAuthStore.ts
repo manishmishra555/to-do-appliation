@@ -18,6 +18,11 @@ interface User {
   name: string;
   email: string;
   avatar?: string;
+  bio?: string;
+  phone?: string;
+  location?: string;
+  createdAt?: string;
+  role?: string;
   settings: UserSettings;
 }
 
@@ -80,50 +85,36 @@ const mockUser: User = {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      user: process.env.NODE_ENV === 'development' ? mockUser : null,
-      isAuthenticated: process.env.NODE_ENV === 'development' ? true : false,
+      user: null,
+      isAuthenticated: false,
       isLoading: false,
       error: null,
 
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
-          // In development, use mock login
-          if (process.env.NODE_ENV === 'development') {
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            const mockUserWithEmail = {
-              ...mockUser,
-              email,
-              name: email.split('@')[0] || 'User',
-            };
-            
-            set({ 
-              user: mockUserWithEmail, 
-              isAuthenticated: true, 
-              isLoading: false 
-            });
-            
-            localStorage.setItem('accessToken', 'mock-access-token');
-            localStorage.setItem('refreshToken', 'mock-refresh-token');
-            
-            toast.success('Logged in successfully!');
-            return;
-          }
-
-          // Production API call
+          // Always use real API
           const response = await api.post('/auth/login', { email, password });
-          const authResponse = response as AuthResponse;
-          const { user, tokens } = authResponse.data;
           
-          localStorage.setItem('accessToken', tokens.access);
-          localStorage.setItem('refreshToken', tokens.refresh);
-          
-          set({ user, isAuthenticated: true, isLoading: false });
-          toast.success('Logged in successfully!');
+          // Backend returns: { status: 'success', data: { user: {...}, tokens: {...} } }
+          if (response.status === 'success' && response.data) {
+            const { user, tokens } = response.data;
+            
+            // Store tokens
+            if (tokens?.access) {
+              localStorage.setItem('accessToken', tokens.access);
+            }
+            if (tokens?.refresh) {
+              localStorage.setItem('refreshToken', tokens.refresh);
+            }
+            
+            set({ user, isAuthenticated: true, isLoading: false });
+            toast.success('Logged in successfully!');
+          } else {
+            throw new Error('Invalid response format from server');
+          }
         } catch (error: any) {
-          const errorMessage = error.response?.data?.message || 'Login failed';
+          const errorMessage = error.response?.data?.message || error.message || 'Login failed';
           set({ error: errorMessage, isLoading: false });
           toast.error(errorMessage);
           throw error;
@@ -133,42 +124,28 @@ export const useAuthStore = create<AuthState>()(
       register: async (name: string, email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
-          // In development, use mock registration
-          if (process.env.NODE_ENV === 'development') {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            const newUser = {
-              id: Date.now().toString(),
-              name,
-              email,
-              settings: defaultSettings,
-            };
-            
-            set({ 
-              user: newUser, 
-              isAuthenticated: true, 
-              isLoading: false 
-            });
-            
-            localStorage.setItem('accessToken', 'mock-access-token');
-            localStorage.setItem('refreshToken', 'mock-refresh-token');
-            
-            toast.success('Account created successfully!');
-            return;
-          }
-
-          // Production API call
+          // Always use real API
           const response = await api.post('/auth/register', { name, email, password });
-          const authResponse = response as AuthResponse;
-          const { user, tokens } = authResponse.data;
           
-          localStorage.setItem('accessToken', tokens.access);
-          localStorage.setItem('refreshToken', tokens.refresh);
-          
-          set({ user, isAuthenticated: true, isLoading: false });
-          toast.success('Account created successfully!');
+          // Backend returns: { status: 'success', data: { user: {...}, tokens: {...} } }
+          if (response.status === 'success' && response.data) {
+            const { user, tokens } = response.data;
+            
+            // Store tokens
+            if (tokens?.access) {
+              localStorage.setItem('accessToken', tokens.access);
+            }
+            if (tokens?.refresh) {
+              localStorage.setItem('refreshToken', tokens.refresh);
+            }
+            
+            set({ user, isAuthenticated: true, isLoading: false });
+            toast.success('Account created successfully!');
+          } else {
+            throw new Error('Invalid response format from server');
+          }
         } catch (error: any) {
-          const errorMessage = error.response?.data?.message || 'Registration failed';
+          const errorMessage = error.response?.data?.message || error.message || 'Registration failed';
           set({ error: errorMessage, isLoading: false });
           toast.error(errorMessage);
           throw error;
@@ -178,19 +155,22 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         set({ isLoading: true });
         try {
-          // Clear tokens first
+          // Try to call logout API (optional - can fail without issues)
+          try {
+            await api.post('/auth/logout');
+          } catch (error) {
+            // Ignore errors on logout - we'll clear local state anyway
+            console.log('Logout API call failed (optional)', error);
+          }
+          
+          // Clear tokens
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
-          
-          // Try to call logout API (optional - can fail without issues)
-          if (process.env.NODE_ENV !== 'development') {
-            await api.post('/auth/logout');
-          }
           
           toast.success('Logged out successfully');
         } catch (error) {
           // Ignore errors on logout - we'll clear local state anyway
-          console.log('Logout API call failed (optional)', error);
+          console.log('Logout failed', error);
         } finally {
           set({ 
             user: null, 
@@ -206,29 +186,16 @@ export const useAuthStore = create<AuthState>()(
       updateUser: async (userData: Partial<User>) => {
         set({ isLoading: true });
         try {
-          // In development, simulate update
-          if (process.env.NODE_ENV === 'development') {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            const currentUser = get().user;
-            const updatedUser = {
-              ...currentUser!,
-              ...userData,
-            };
-            
-            set({ user: updatedUser as User, isLoading: false });
-            toast.success('Profile updated successfully!');
-            return;
-          }
-
-          // Production API call
           const response = await api.put('/auth/profile', userData);
-          const updateResponse = response as UpdateUserResponse;
           
-          set({ user: updateResponse.data, isLoading: false });
-          toast.success('Profile updated successfully!');
+          if (response.status === 'success' && response.data?.user) {
+            set({ user: response.data.user, isLoading: false });
+            toast.success('Profile updated successfully!');
+          } else {
+            throw new Error('Invalid response format from server');
+          }
         } catch (error: any) {
-          const errorMessage = error.response?.data?.message || 'Update failed';
+          const errorMessage = error.response?.data?.message || error.message || 'Update failed';
           set({ error: errorMessage, isLoading: false });
           toast.error(errorMessage);
           throw error;
@@ -238,19 +205,13 @@ export const useAuthStore = create<AuthState>()(
       updateSettings: async (settings: Partial<UserSettings>) => {
         set({ isLoading: true });
         try {
-          // In development, simulate update
-          if (process.env.NODE_ENV === 'development') {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
+          const response = await api.put('/auth/settings', settings);
+          
+          if (response.status === 'success' && response.data) {
             const currentUser = get().user;
-            if (!currentUser) throw new Error('No user logged in');
-            
             const updatedUser = {
-              ...currentUser,
-              settings: {
-                ...currentUser.settings,
-                ...settings,
-              },
+              ...currentUser!,
+              settings: response.data,
             };
             
             set({ user: updatedUser, isLoading: false });
@@ -261,29 +222,11 @@ export const useAuthStore = create<AuthState>()(
             }
             
             toast.success('Settings updated successfully!');
-            return;
+          } else {
+            throw new Error('Invalid response format from server');
           }
-
-          // Production API call
-          const response = await api.put('/auth/settings', settings);
-          const updateResponse = response as UpdateSettingsResponse;
-          
-          const currentUser = get().user;
-          const updatedUser = {
-            ...currentUser!,
-            settings: updateResponse.data,
-          };
-          
-          set({ user: updatedUser, isLoading: false });
-          
-          // Update theme in localStorage
-          if (settings.theme) {
-            localStorage.setItem('theme', settings.theme);
-          }
-          
-          toast.success('Settings updated successfully!');
         } catch (error: any) {
-          const errorMessage = error.response?.data?.message || 'Settings update failed';
+          const errorMessage = error.response?.data?.message || error.message || 'Settings update failed';
           set({ error: errorMessage, isLoading: false });
           toast.error(errorMessage);
           throw error;
@@ -293,31 +236,6 @@ export const useAuthStore = create<AuthState>()(
       deleteAccount: async () => {
         set({ isLoading: true });
         try {
-          // In development, simulate deletion
-          if (process.env.NODE_ENV === 'development') {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Clear tokens
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            localStorage.removeItem('auth-storage');
-            
-            toast.success('Account deleted successfully');
-            
-            // Redirect to login after a delay
-            setTimeout(() => {
-              set({ 
-                user: null, 
-                isAuthenticated: false, 
-                isLoading: false 
-              });
-              window.location.href = '/auth/login';
-            }, 1500);
-            
-            return;
-          }
-
-          // Production API call
           await api.delete('/auth/account');
           
           // Clear all stored data
@@ -338,7 +256,7 @@ export const useAuthStore = create<AuthState>()(
           }, 1500);
           
         } catch (error: any) {
-          const errorMessage = error.response?.data?.message || 'Account deletion failed';
+          const errorMessage = error.response?.data?.message || error.message || 'Account deletion failed';
           set({ error: errorMessage, isLoading: false });
           toast.error(errorMessage);
           throw error;

@@ -1,5 +1,5 @@
 // src/pages/tasks/TasksPage.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TaskList } from '../../components/tasks/TaskList';
 import { useTaskStore } from '../../store/useTaskStore';
@@ -7,7 +7,12 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 export const TasksPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isLoading } = useTaskStore();
+  const { isLoading, tasks, fetchTasks } = useTaskStore();
+
+  useEffect(() => {
+    fetchTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only fetch once on mount
 
   if (isLoading) {
     return (
@@ -19,7 +24,7 @@ export const TasksPage: React.FC = () => {
 
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
+      <div className="mx-auto">
         {/* Page Header */}
         <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
@@ -32,7 +37,7 @@ export const TasksPage: React.FC = () => {
 
         {/* Task List Component */}
         <TaskList 
-          tasks={[]} // Pass empty array or fetch from store
+          tasks={tasks}
           showHeader={false} // TaskList will handle its own header
           showFilters={true}
           onAddTask={() => navigate('/tasks/create')}

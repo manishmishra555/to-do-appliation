@@ -25,6 +25,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     if (path.includes('/calendar')) return 'Calendar';
     if (path.includes('/analytics')) return 'Analytics';
     if (path.includes('/settings')) return 'Settings';
+    if (path.includes('/profile')) return 'Profile';
     return 'Dashboard';
   };
 
@@ -35,6 +36,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     if (path.includes('/calendar')) return 'Monthly View';
     if (path.includes('/analytics')) return 'Overview';
     if (path.includes('/settings')) return 'General';
+    if (path.includes('/profile')) return 'My Profile';
     return 'Overview';
   };
 

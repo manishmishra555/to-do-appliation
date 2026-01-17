@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useProjectStore } from '../../store/useProjectStore';
 
 interface Tag {
   id: string;
@@ -11,6 +12,7 @@ interface Tag {
 
 const CreateProjectPage: React.FC = () => {
   const navigate = useNavigate();
+  const { addProject, isLoading } = useProjectStore();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -61,13 +63,23 @@ const CreateProjectPage: React.FC = () => {
     }
 
     setIsSubmitting(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      toast.success('Project created successfully!');
-      setIsSubmitting(false);
+    try {
+      await addProject({
+        title: formData.title,
+        description: formData.description,
+        icon: 'web',
+        iconColor: 'blue',
+        progress: 0,
+        status: 'planning',
+        completedTasks: 0,
+        totalTasks: 0,
+        color: 'primary',
+      });
       navigate('/projects');
-    }, 1000);
+    } catch (_) {
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCancel = () => {

@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 
 const SettingsPage: React.FC = () => {
   const { theme, setTheme } = useTheme();
-  const { user, logout } = useAuthStore();
+  const { user, logout, updateSettings } = useAuthStore();
   const [compactMode, setCompactMode] = useState(false);
   const [desktopNotifications, setDesktopNotifications] = useState(true);
   const [emailDigest, setEmailDigest] = useState('Weekly');
@@ -17,6 +17,7 @@ const SettingsPage: React.FC = () => {
 
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
     setTheme(newTheme);
+    updateSettings({ theme: newTheme }).catch(() => {});
     toast.success(`Theme changed to ${newTheme}`);
   };
 
@@ -131,7 +132,11 @@ const SettingsPage: React.FC = () => {
                     type="checkbox" 
                     className="sr-only peer" 
                     checked={compactMode}
-                    onChange={(e) => setCompactMode(e.target.checked)}
+                    onChange={(e) => {
+                      const value = e.target.checked;
+                      setCompactMode(value);
+                      updateSettings({ compactMode: value }).catch(() => {});
+                    }}
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/30 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
                 </label>
@@ -165,7 +170,11 @@ const SettingsPage: React.FC = () => {
                     type="checkbox" 
                     className="sr-only peer" 
                     checked={desktopNotifications}
-                    onChange={(e) => setDesktopNotifications(e.target.checked)}
+                    onChange={(e) => {
+                      const value = e.target.checked;
+                      setDesktopNotifications(value);
+                      updateSettings({ desktopNotifications: value }).catch(() => {});
+                    }}
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/30 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
                 </label>
@@ -187,7 +196,12 @@ const SettingsPage: React.FC = () => {
                 <div className="relative">
                   <select 
                     value={emailDigest}
-                    onChange={(e) => setEmailDigest(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setEmailDigest(value);
+                      const mapped = value.toLowerCase() as 'daily' | 'weekly' | 'monthly' | 'never';
+                      updateSettings({ emailFrequency: mapped }).catch(() => {});
+                    }}
                     className="block w-40 pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-lg bg-white dark:bg-[#2d3748] dark:text-white cursor-pointer shadow-sm"
                   >
                     <option value="Daily">Daily</option>
@@ -206,7 +220,7 @@ const SettingsPage: React.FC = () => {
               <span className="material-symbols-outlined text-primary">person</span>
               Account
             </h2>
-            
+             
             <div className="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-[#e5e7eb] dark:border-[#2d3748] overflow-hidden divide-y divide-[#e5e7eb] dark:divide-[#2d3748]">
               {/* Profile Summary */}
               <div className="p-6 flex items-center justify-between">
@@ -214,12 +228,16 @@ const SettingsPage: React.FC = () => {
                   <div 
                     className="bg-center bg-no-repeat bg-cover rounded-full size-16 ring-4 ring-white dark:ring-[#2d3748]"
                     style={{ 
-                      backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCV2PZ0gvcIKd_wxrSImlX7JtKLygwcGuOD64o17xVFi4ehTy6U14QZP417e8GvFl8lBy4Y2qckDPvrfnqTL5aX_2nqU3aeLQxnuGd-XJ85xZVDsFoVwMVxBjGKxJmuFfV9VmGGAYOK0l2K056iuCOoFDbONP_hEcRjAI9h37TgzlSrbtvOp1MNIRNjn29UskTGY0t7lTtN3-NjOJdK1eylGsPNoDTlqfZz4g1tWCEsaqyB8RS7Tln3lD_wtm0rF7gf6eQlZ8dkhgTu")' 
+                      backgroundImage: user?.avatar 
+                        ? `url("${user.avatar}")` 
+                        : user?.avatar 
+                          ? `url("${user.avatar}")` 
+                          : 'none'
                     }}
                   />
                   <div>
-                    <h3 className="text-lg font-bold text-[#111418] dark:text-white">{user?.name || 'Alex Morgan'}</h3>
-                    <p className="text-sm text-[#617589] dark:text-gray-400">{user?.email || 'alex.morgan@example.com'}</p>
+                    <h3 className="text-lg font-bold text-[#111418] dark:text-white">{user?.name || 'No User'}</h3>
+                    <p className="text-sm text-[#617589] dark:text-gray-400">{user?.email || 'user@example.com'}</p>
                   </div>
                 </div>
                 <button 

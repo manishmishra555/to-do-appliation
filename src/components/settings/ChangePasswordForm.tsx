@@ -1,9 +1,9 @@
-
 // src/components/settings/ChangePasswordForm.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import toast from 'react-hot-toast';
 import { X } from 'lucide-react';
+import { api } from '../../api/client';
 
 interface ChangePasswordFormProps {
   onClose: () => void;
@@ -63,6 +63,17 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
       return;
     }
 
+    // Check password strength requirements
+    const hasUpperCase = /[A-Z]/.test(newPassword);
+    const hasLowerCase = /[a-z]/.test(newPassword);
+    const hasNumbers = /\d/.test(newPassword);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword);
+
+    if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+      toast.error('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character');
+      return;
+    }
+
     if (currentPassword === newPassword) {
       toast.error('New password must be different from current password');
       return;
@@ -71,23 +82,31 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast.success('Password changed successfully');
-      
-      // Reset form
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      
-      if (onSuccess) {
-        onSuccess();
+      // Call API to change password
+      const response = await api.put('/auth/change-password', {
+        currentPassword,
+        newPassword
+      });
+
+      if (response.status === 'success') {
+        toast.success('Password changed successfully');
+        
+        // Reset form
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        
+        if (onSuccess) {
+          onSuccess();
+        }
+        
+        onClose();
+      } else {
+        throw new Error('Invalid response from server');
       }
-      
-      onClose();
-    } catch (error) {
-      toast.error('Failed to change password. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to change password. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -103,16 +122,16 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
     }
   };
 
-  return (
+  const modalContent = (
     <>
       {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/50 z-40"
+      <div
+        className="fixed inset-0 bg-black/50 z-[1000]"
         onClick={onClose}
       />
-      
+
       {/* Modal */}
-      <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 flex items-center justify-center z-[1001] p-4">
         <div className="w-full max-w-[600px] bg-surface-light dark:bg-surface-dark rounded-xl shadow-2xl border border-gray-100 dark:border-gray-800">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-800">
@@ -127,6 +146,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
             <button
               onClick={onClose}
               className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Close"
             >
               <X className="w-5 h-5" />
             </button>
@@ -151,11 +171,13 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
                   placeholder="••••••••"
                   className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800/50 h-12 px-4 pr-12 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
                   required
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                   className="absolute right-0 top-0 bottom-0 px-4 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  aria-label={showCurrentPassword ? "Hide password" : "Show password"}
                 >
                   <span className="material-symbols-outlined text-[20px]">
                     {showCurrentPassword ? "visibility_off" : "visibility"}
@@ -181,11 +203,13 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
                   placeholder="••••••••"
                   className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800/50 h-12 px-4 pr-12 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
                   required
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
                   className="absolute right-0 top-0 bottom-0 px-4 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  aria-label={showNewPassword ? "Hide password" : "Show password"}
                 >
                   <span className="material-symbols-outlined text-[20px]">
                     {showNewPassword ? "visibility_off" : "visibility"}
@@ -265,11 +289,13 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
                   placeholder="••••••••"
                   className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800/50 h-12 px-4 pr-12 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
                   required
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-0 top-0 bottom-0 px-4 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                 >
                   <span className="material-symbols-outlined text-[20px]">
                     {showConfirmPassword ? "visibility_off" : "visibility"}
@@ -289,6 +315,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
                 type="button"
                 onClick={onClose}
                 className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white font-medium text-sm px-2 py-2 transition-colors"
+                disabled={isLoading}
               >
                 Cancel
               </button>
@@ -319,4 +346,6 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
       </div>
     </>
   );
+
+  return ReactDOM.createPortal(modalContent, document.body);
 };

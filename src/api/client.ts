@@ -33,6 +33,10 @@ class ApiClient {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+        // Don't set Content-Type for FormData - let browser handle it with boundary
+        if (config.data instanceof FormData) {
+          delete config.headers['Content-Type'];
+        }
         return config;
       },
       (error: any) => {
@@ -61,13 +65,15 @@ class ApiClient {
               { refreshToken }
             );
 
-            // Type-safe access to response data
-            const responseData = response.data as RefreshTokenResponse;
-            const accessToken = responseData.accessToken || responseData.access;
+            // Backend returns: { status: 'success', data: { accessToken: '...' } }
+            const responseData = response.data as any;
+            const accessToken = responseData.data?.accessToken || responseData.accessToken || responseData.access;
             
-            if (accessToken) {
-              localStorage.setItem('accessToken', accessToken);
+            if (!accessToken) {
+              throw new Error('No access token in refresh response');
             }
+            
+            localStorage.setItem('accessToken', accessToken);
 
             if (originalRequest.headers) {
               originalRequest.headers.Authorization = `Bearer ${accessToken}`;

@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
-    name: '',
+    full_name: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -29,10 +29,10 @@ const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const { name, email, password, confirmPassword } = formData;
+    const { full_name, email, password, confirmPassword } = formData;
     
     // Validation
-    if (!name || !email || !password || !confirmPassword) {
+    if (!full_name || !email || !password || !confirmPassword) {
       toast.error('Please fill in all fields');
       return;
     }
@@ -55,7 +55,7 @@ const RegisterPage: React.FC = () => {
     setIsLoading(true);
     
     try {
-      await register(name, email, password);
+      await register(full_name, email, password);
       toast.success('Account created successfully!');
       navigate('/dashboard');
     } catch (error: any) {
@@ -95,15 +95,15 @@ const RegisterPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             {/* Name Field */}
             <div className="flex flex-col gap-2">
-              <label className="text-slate-900 dark:text-slate-200 text-sm font-medium" htmlFor="full-name">
+              <label className="text-slate-900 dark:text-slate-200 text-sm font-medium" htmlFor="full_name">
                 Full Name
               </label>
               <input
                 className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1a2632] h-12 px-4 text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 ease-in-out text-base"
-                id="full-name"
+                id="full_name"
                 placeholder="e.g. John Doe"
                 type="text"
-                value={formData.name}
+                value={formData.full_name}
                 onChange={handleChange}
                 disabled={isLoading}
                 required

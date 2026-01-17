@@ -5,12 +5,14 @@ interface StatsCardsProps {
   totalTasks: number;
   completedTasks: number;
   pendingTasks: number;
+  completionRate?: number;
 }
 
 const StatsCards: React.FC<StatsCardsProps> = ({
   totalTasks,
   completedTasks,
-  pendingTasks
+  pendingTasks,
+  completionRate = 0
 }) => {
   const stats = [
     {
@@ -18,21 +20,21 @@ const StatsCards: React.FC<StatsCardsProps> = ({
       value: totalTasks,
       icon: 'list_alt',
       color: 'blue',
-      change: '+20%'
+      change: totalTasks > 0 ? `+${Math.round((totalTasks / Math.max(totalTasks - 5, 1)) * 100 - 100)}%` : '+0%'
     },
     {
       label: 'Completed',
       value: completedTasks,
       icon: 'check_circle',
       color: 'green',
-      change: '+15%'
+      change: `+${completionRate}%`
     },
     {
       label: 'Pending',
       value: pendingTasks,
       icon: 'schedule',
       color: 'orange',
-      change: pendingTasks > 0 ? '-5%' : '+0%'
+      change: pendingTasks > 0 ? `-${Math.round((pendingTasks / Math.max(totalTasks, 1)) * 100)}%` : '+0%'
     }
   ];
 

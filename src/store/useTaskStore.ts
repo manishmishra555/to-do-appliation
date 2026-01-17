@@ -1,15 +1,19 @@
 // src/store/useTaskStore.ts
 import { create } from 'zustand';
 import { Task } from '../types/task';
+import { api } from '../api/client';
+import toast from 'react-hot-toast';
 
 interface TaskStore {
   tasks: Task[];
   isLoading: boolean;
+  error: string | null;
   fetchTasks: () => Promise<void>;
-  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  updateTask: (id: string, updates: Partial<Task>) => void;
-  deleteTask: (id: string) => void;
-  reorderTasks: (oldIndex: number, newIndex: number) => void;
+  addTask: (task: Partial<Task>) => Promise<void>;
+  updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  reorderTasks: (oldIndex: number, newIndex: number) => Promise<void>;
+  toggleTaskCompletion: (id: string, completed: boolean) => Promise<void>;
   getTaskStats: () => {
     total: number;
     completed: number;
@@ -21,101 +25,145 @@ interface TaskStore {
 export const useTaskStore = create<TaskStore>((set, get) => ({
   tasks: [],
   isLoading: false,
+  error: null,
   
   fetchTasks: async () => {
-    set({ isLoading: true });
-    // Mock data for dashboard
-    const mockTasks: Task[] = [
-      {
-        id: '1',
-        title: 'Q3 Financial Report',
-        description: 'Review final budget allocation and expense sheets.',
-        completed: false,
-        priority: 'high',
-        dueDate: new Date().toISOString(),
-        assignees: [
-          { id: '1', name: 'John Doe', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAn1TebwQ0MiGdPVrWoLBsYcjW97odMJGNMwxSPLC5oSAO_rCPtBT-0iau0ob58rqbAsLfNItB1b3odH_KVSKUkDUpeybcp4PR0GfKQEflaM7xeciHmDo1QwvWQoz_XMO3BD3yMOCXRjciB4PqDN60jHhBnKjCZ_doHeix2fE3D_0d45yEUF9JwYfb640YHePuuPnNj2G3RJuYF4Lk79rliDcewFKbenxH9V0_Op587-wfx4W7a_XrpnoD0ulXDuEhWGqySNPsF1Fv2' },
-          { id: '2', name: 'Jane Smith' },
-        ],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        title: 'Team Meeting Prep',
-        description: 'Prepare slides for the weekly sync.',
-        completed: false,
-        priority: 'medium',
-        dueDate: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
-        assignees: [{ id: '3', name: 'Alice Johnson' }],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: '3',
-        title: 'Update Website Assets',
-        description: 'Replace old banners with new campaign visuals.',
-        completed: false,
-        priority: 'low',
-        dueDate: new Date(Date.now() + 172800000).toISOString(), // Day after tomorrow
-        assignees: [
-          { id: '4', name: 'Bob Wilson' },
-          { id: '5', name: 'Carol Davis' },
-        ],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: '4',
-        title: 'Client Feedback Review',
-        description: 'Go through the latest comments on Figma.',
-        completed: true,
-        priority: 'medium',
-        dueDate: new Date(Date.now() - 86400000).toISOString(), // Yesterday
-        assignees: [{ id: '6', name: 'David Lee' }],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    ];
-    
-    setTimeout(() => {
-      set({ tasks: mockTasks, isLoading: false });
-    }, 500);
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.get('/tasks');
+      // Backend returns { status: 'success', data: tasks[], pagination: {...} }
+      if (response.status === 'success' && Array.isArray(response.data)) {
+        set({ tasks: response.data, isLoading: false });
+      } else {
+        set({ tasks: [], isLoading: false });
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch tasks:', error);
+      set({ 
+        error: error.response?.data?.message || 'Failed to fetch tasks',
+        isLoading: false 
+      });
+      toast.error(error.response?.data?.message || 'Failed to fetch tasks');
+    }
   },
   
-  addTask: (task) => {
-    const newTask: Task = {
-      ...task,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    set((state) => ({ tasks: [...state.tasks, newTask] }));
+  addTask: async (task) => {
+    try {
+      set({ isLoading: true, error: null });
+      const response = await api.post('/tasks', task);
+      if (response.status === 'success' && response.data) {
+        const newTask = response.data;
+        set((state) => ({ 
+          tasks: [...state.tasks, newTask],
+          isLoading: false 
+        }));
+        toast.success('Task created successfully');
+      }
+    } catch (error: any) {
+      console.error('Failed to create task:', error);
+      set({ 
+        error: error.response?.data?.message || 'Failed to create task',
+        isLoading: false 
+      });
+      toast.error(error.response?.data?.message || 'Failed to create task');
+      throw error;
+    }
   },
   
-  updateTask: (id, updates) => {
-    set((state) => ({
-      tasks: state.tasks.map((task) =>
-        task.id === id
-          ? { ...task, ...updates, updatedAt: new Date().toISOString() }
-          : task
-      ),
-    }));
+  updateTask: async (id, updates) => {
+    try {
+      set({ isLoading: true, error: null });
+      const response = await api.put(`/tasks/${id}`, updates);
+      if (response.status === 'success' && response.data) {
+        const updatedTask = response.data;
+        set((state) => ({
+          tasks: state.tasks.map((task) =>
+            task._id === id ? updatedTask : task
+          ),
+          isLoading: false
+        }));
+        toast.success('Task updated successfully');
+      }
+    } catch (error: any) {
+      console.error('Failed to update task:', error);
+      set({ 
+        error: error.response?.data?.message || 'Failed to update task',
+        isLoading: false 
+      });
+      toast.error(error.response?.data?.message || 'Failed to update task');
+      throw error;
+    }
   },
   
-  deleteTask: (id) => {
-    set((state) => ({
-      tasks: state.tasks.filter((task) => task.id !== id),
-    }));
+  deleteTask: async (id) => {
+    try {
+      set({ isLoading: true, error: null });
+      await api.delete(`/tasks/${id}`);
+      set((state) => ({
+        tasks: state.tasks.filter((task) => task._id !== id),
+        isLoading: false
+      }));
+      toast.success('Task deleted successfully');
+    } catch (error: any) {
+      console.error('Failed to delete task:', error);
+      set({ 
+        error: error.response?.data?.message || 'Failed to delete task',
+        isLoading: false 
+      });
+      toast.error(error.response?.data?.message || 'Failed to delete task');
+      throw error;
+    }
   },
   
-  reorderTasks: (oldIndex, newIndex) => {
-    set((state) => {
-      const newTasks = [...state.tasks];
-      const [removed] = newTasks.splice(oldIndex, 1);
-      newTasks.splice(newIndex, 0, removed);
-      return { tasks: newTasks };
-    });
+  reorderTasks: async (oldIndex, newIndex) => {
+    try {
+      set({ isLoading: true, error: null });
+      await api.put('/tasks/reorder', {
+        sourceIndex: oldIndex,
+        destinationIndex: newIndex,
+      });
+      // Update local state optimistically
+      set((state) => {
+        const newTasks = [...state.tasks];
+        const [removed] = newTasks.splice(oldIndex, 1);
+        newTasks.splice(newIndex, 0, removed);
+        return { tasks: newTasks, isLoading: false };
+      });
+    } catch (error: any) {
+      console.error('Failed to reorder tasks:', error);
+      set({ 
+        error: error.response?.data?.message || 'Failed to reorder tasks',
+        isLoading: false 
+      });
+      toast.error(error.response?.data?.message || 'Failed to reorder tasks');
+      // Re-fetch tasks to sync with server
+      get().fetchTasks();
+      throw error;
+    }
+  },
+
+  toggleTaskCompletion: async (id, completed) => {
+    try {
+      set({ isLoading: true, error: null });
+      const response = await api.patch(`/tasks/${id}/toggle`, { completed });
+      if (response.status === 'success' && response.data) {
+        const updatedTask = response.data;
+        set((state) => ({
+          tasks: state.tasks.map((task) =>
+            task._id === id ? updatedTask : task
+          ),
+          isLoading: false
+        }));
+      }
+    } catch (error: any) {
+      console.error('Failed to toggle task completion:', error);
+      set({ 
+        error: error.response?.data?.message || 'Failed to update task',
+        isLoading: false 
+      });
+      toast.error(error.response?.data?.message || 'Failed to update task');
+      throw error;
+    }
   },
   
   getTaskStats: () => {

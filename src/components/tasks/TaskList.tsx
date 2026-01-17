@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   DndContext,
@@ -18,7 +19,6 @@ import {
 import { TaskItem } from './TaskItem';
 import { Task } from '../../types/task';
 import { useTaskStore } from '../../store/useTaskStore';
-import { useNavigate } from 'react-router-dom';
 
 interface TaskListProps {
   tasks?: Task[];
@@ -37,7 +37,6 @@ export const TaskList: React.FC<TaskListProps> = ({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
-  const navigate = useNavigate();
 
   // Use external tasks if provided, otherwise use store tasks
   const tasks = externalTasks || storeTasks;
@@ -62,8 +61,8 @@ export const TaskList: React.FC<TaskListProps> = ({
     setActiveId(null);
 
     if (over && active.id !== over.id) {
-      const oldIndex = tasks.findIndex((task) => task.id === active.id);
-      const newIndex = tasks.findIndex((task) => task.id === over.id);
+      const oldIndex = tasks.findIndex((task) => (task as any)._id === active.id);
+      const newIndex = tasks.findIndex((task) => (task as any)._id === over.id);
       reorderTasks(oldIndex, newIndex);
     }
   };
@@ -81,7 +80,7 @@ export const TaskList: React.FC<TaskListProps> = ({
     return matchesSearch && matchesFilter;
   });
 
-  const activeTask = tasks.find(task => task.id === activeId);
+  const activeTask = tasks.find(task => (task as any)._id === activeId);
 
   return (
     <div className="flex flex-col gap-4">
@@ -177,13 +176,13 @@ export const TaskList: React.FC<TaskListProps> = ({
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={filteredTasks.map(task => task.id)}
+          items={filteredTasks.map(task => (task as any)._id)}
           strategy={verticalListSortingStrategy}
         >
           <div className="flex flex-col gap-3">
             {filteredTasks.map((task) => (
               <TaskItem
-                key={task.id}
+                key={(task as any)._id}
                 task={task}
                 onUpdate={updateTask}
                 onDelete={deleteTask}
